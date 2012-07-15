@@ -19,16 +19,12 @@
       var play = praiseplay(canvas.width, canvas.height, ctx, world);
     
       play.reRender();
-      //play.newEvent(13.408056, 52.518611, "");
-      window.setInterval(play.reRender, 50);
-      window.setInterval(function() {
-          play.newEvent(151, -33, "");
-        }, 5000);
+      window.setInterval(play.reRender, 100);
       window.setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
-          play.newEvent(x, y, "");
-        }, 5);
+          play.newEvent({longitude: x, latitude: y, color: "#ff8800", length: 1024});
+        }, 200);
     </script>
   </body>
 </html>
