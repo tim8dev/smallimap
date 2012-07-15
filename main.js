@@ -150,7 +150,7 @@ var generateGrid = function (world, width, height, dot) {
 		    dot, i, j, radius = 2, length, distance, delay, nx, ny,
 		    targetRadius = dotRadius,
 		    targetColor = new Color(event.color),
-		    createChangers = function (x, y, startColor, targetColor, startRadius, delay, length) {
+		    createChangers = function (x, y, startColor, targetColor, startRadius, targetRadius, delay, length) {
 			setTimeout(function() {
 			    eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, length, function () {
 				eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, length, function () {}));
@@ -170,7 +170,9 @@ var generateGrid = function (world, width, height, dot) {
 			    delay = Math.sqrt(distance) * event.length/radius;
 			    length = distance === 0 ? event.length : event.length/radius;
 			    if(length > 0) {
-				createChangers(nx, ny, dot.initial.color, new Color(targetColor.rgbString()).lighten(0.32*distance).clearer(0.2*distance), dot.initial.radius, delay, length);
+				createChangers(nx, ny,
+					       dot.initial.color, new Color(targetColor.rgbString()).lighten(0.32*distance).clearer(0.2*distance),
+					       dot.initial.radius, (targetRadius - dot.initial.radius)/(distance + 1) + dot.initial.radius, delay, length);
 			    }
 			}
 		    }
