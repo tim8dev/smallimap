@@ -119,12 +119,7 @@ var generateGrid = function (world, width, height, dot) {
 	            updater = function(now) {
 			var diff = now.getTime() - startTime;
 			if(diff < length) {
-			    if(grid[x] && grid[x][y]) {
-				console.log("yo2");
-				setColor(x,y, new Color(start.rgbString()).mix(target, diff/length));
-			    } else {
-				console.log("nx=" + x, "ny=" + y);
-			    }
+			    setColor(x,y, new Color(start.rgbString()).mix(target, diff/length));
 			    eventQueue.push(updater);
 			} else {
 			    onComplete();
@@ -165,11 +160,11 @@ var generateGrid = function (world, width, height, dot) {
 		    for(j = -radius; j <= radius; j += 1) {
 			nx = x + i;
 			ny = y + j;
-			if(nx >= 0 && ny >= 0 && nx < width && ny < height) {
+			distance = Math.sqrt(i*i + j*j);
+			if(nx >= 0 && ny >= 0 && nx < width && ny < height && distance <= radius) {
 			    dot = grid[nx][ny];
-			    distance = Math.sqrt(i*i + j*j);
-			    length = event.length/(distance + 1);
-			    delay = distance * length;
+			    length = event.length / distance;
+			    delay = distance * 100;
 			    createChangers(nx, ny, dot.initial.color, dot.initial.radius, delay, length);
 			}
 		    }
