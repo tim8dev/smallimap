@@ -114,16 +114,15 @@ var generateGrid = function (world, width, height, dot) {
 		}
 	    },
 	    events: {
-		changeColor: function (x, y, start, target, length, onComplete) {
+		changeColor: function (x, y, start, target, weight, length, onComplete) {
 		    var startTime = new Date().getTime(),
 	            updater = function(now) {
-			var diff = now.getTime() - startTime;
+			var diff = now.getTime() - startTime,
+			    frameWeight = weight * diff/length;
+			setColor(x,y, new Color(start.rgbString()).mix(target, weight));
 			if(diff < length) {
-			    setColor(x,y, new Color(start.rgbString()).mix(target, diff/length));
 			    eventQueue.push(updater);
 			} else {
-			    setColor(x,y, new Color(start.rgbString()).mix(target, diff/length));
-			    reset(x,y);
 			    onComplete();
 			}
 		    };
@@ -132,47 +131,47 @@ var generateGrid = function (world, width, height, dot) {
 		    var startTime = new Date().getTime(),
 			updater = function(now) {
 			    var diff = now.getTime() - startTime;
+			    setRadius(x,y, (target-start)*diff/length + start);
 			    if(diff < length) {
-				setRadius(x,y, (target-start)*diff/length + start);
 				eventQueue.push(updater);
 			    } else {
-				setRadius(x,y, (target-start)*diff/length + start);
-				reset(x,y);
 				onComplete();
 			    }
 			};
 		    return updater;
 		}
 	    },
-	    // { longitude: , latitude: , color: String (z.B. "#ff0088"), weight: [0..1], length: [in millis]}
+	    // { longitude: , latitude: , color: String (z.B. "#ff0088"), weight: [0..1], length: [in millis], radius: Int}
 	    newEvent: function(event) {
 		var x = longToX(event.longitude), y = latToX(event.latitude),
-		    dot, i, j, radius = 2, length, distance, delay, nx, ny,
-		    targetRadius = dotRadius,
-		    targetColor = new Color(event.color),
-		    createChangers = function (x, y, startColor, targetColor, startRadius, targetRadius, delay, length) {
+		    dot, i, j, radius = event.radius || 5, length, d, delay, nx, ny,
+		    targetRadius, targetColor,
+		    createChangers = function (x, y, startColor, targetColor, colorWeight, startRadius, targetRadius, delay, length) {
 			setTimeout(function() {
-			    eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, length, function () {
-				eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, length, function () {}));
+			    eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, colorWeight, Math.min(512, length), function () {
+				eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, 1, length, function () {}));
 			    })); 
-			    eventQueue.push(pub.events.changeRadius(x, y, startRadius, targetRadius, length, function () {
+			    eventQueue.push(pub.events.changeRadius(x, y, startRadius, targetRadius, Math.min(512, length), function () {
 				eventQueue.push(pub.events.changeRadius(x, y, targetRadius, startRadius, length, function () {}));
 			    }));
 			}, delay);
 		    };
+		
 		for(i = -radius; i <= radius; i += 1) {
 		    for(j = -radius; j <= radius; j += 1) {
 			nx = x + i;
 			ny = y + j;
-			distance = Math.sqrt(i*i + j*j);
-			if(nx >= 0 && ny >= 0 && nx < width && ny < height && distance <= radius) {
+			d = Math.sqrt(i*i + j*j);
+			if(nx >= 0 && ny >= 0 && nx < width && ny < height && d < radius) {
 			    dot = grid[nx][ny];
-			    delay = Math.sqrt(distance) * event.length/radius;
-			    length = distance === 0 ? event.length : event.length/radius;
+			    delay = event.length * (d/radius);
+			    length = event.length - delay;
+			    targetColor = new Color(event.color);
+			    targetRadius = (dotRadius - dot.initial.radius)/(d + 1) + dot.initial.radius;
 			    if(length > 0) {
 				createChangers(nx, ny,
-					       dot.initial.color, new Color(targetColor.rgbString()).lighten(0.32*distance).clearer(0.2*distance),
-					       dot.initial.radius, (targetRadius - dot.initial.radius)/(distance + 1) + dot.initial.radius, delay, length);
+					       dot.initial.color, targetColor, 1 - d/radius,
+					       dot.initial.radius, targetRadius, delay, length);
 			    }
 			}
 		    }

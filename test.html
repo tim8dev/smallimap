@@ -4,42 +4,36 @@
   <body style="background-color: #fafafa;">
     <canvas id="praiseplay" width="1152" height="608"></canvas>
     
+    <script src="renderframe.js"></script>
     <script src="color-0.4.1.js"></script>
     <script src="main.js"></script>
     <script src="world.js"></script>
-    <script>
-    /*  var world = [
-        [true, false, true, false],
-        [false, true, true, true],
-        [true, true, true, false],
-        [false, true, true, true],
-        [false, false, true, false]];*/
+    <script type="text/javascript">
       var canvas = document.getElementById("praiseplay");
       var ctx = canvas.getContext("2d");
       var play = praiseplay(canvas.width, canvas.height, ctx, world);
-    
-      play.reRender();
-      window.setInterval(play.reRender, 20);
-      window.setInterval(function() {
+      
+      var draw = function() {
+	  play.reRender();
+	  requestAnimationFrame(draw);
+      }
+      draw();
+      
+      setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
-          play.newEvent({longitude: x, latitude: y, color: "#336699", length: 1024});
-        }, 100);
-      window.setInterval(function() {
+          play.newEvent({longitude: x, latitude: y, color: "#336699", length: 512});
+        }, 512);
+      setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
-          play.newEvent({longitude: x, latitude: y, color: "#996633", length: 1024});
-        }, 111);
-      window.setInterval(function() {
+          play.newEvent({longitude: x, latitude: y, color: "#996633", length: 1280});
+        }, 1280);/*
+      setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
           play.newEvent({longitude: x, latitude: y, color: "#693693", length: 1024});
-        }, 58);
-      window.setInterval(function() {
-          var x = Math.random() * 360 - 180,
-              y = Math.random() * 180 - 90;
-          play.newEvent({longitude: x, latitude: y, color: "#009999", length: 1024});
-        }, 25);
+        }, 58);*/
     </script>
   </body>
 </html>
