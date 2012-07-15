@@ -114,52 +114,17 @@ var generateGrid = function (world, width, height, dot) {
 		}
 	    },
 	    events: {
-		distributeActivity: function (x, y, length, radius) {
-		    var startTime = new Date().getTime(),
-		        dot = grid[x][y],
-			startColor = new Color(dot.initial.color.rgbString()),
-		        targetColor = new Color("#ff8800"),
-		        startRadius = dot.initial.radius,
-		        targetRadius = dotRadius,
-		        started = false,
-		        xs = [x-1, x, x+1],
-		        ys = [y-1, y, y+2],
-		        updater = function (now) {
-			    var diff = now.getTime() - startTime, i, j, nx, ny;
-			    if(diff < length/2) {
-				if(!started) {
-				    started = true;
-				    eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, length, function () {
-					eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, length, function () {}));
-				    }));
-				    eventQueue.push(pub.events.changeRadius(x, y, startRadius, targetRadius, length, function () {
-					eventQueue.push(pub.events.changeRadius(x, y, targetRadius, startRadius, length, function () {}));
-				    }));
-				}
-				eventQueue.push(updater);
-			    } else {
-				for(i = -1; i <= 1; i += 1) {
-				    for(j = -1; j <= 1; j += 1) {
-					if(i === 0 || j === 0) {
-					    nx = x + i;
-					    ny = y + j;
-					    if(grid[nx] && grid[nx][ny]) {
-						eventQueue.push(pub.events.distributeActivity(nx, ny, length - diff, radius - 1));
-					    }
-					}
-				    }
-				}
-			    }
-			};
-
-		    return updater;
-		},
 		changeColor: function (x, y, start, target, length, onComplete) {
 		    var startTime = new Date().getTime(),
 	            updater = function(now) {
 			var diff = now.getTime() - startTime;
 			if(diff < length) {
-			    setColor(x,y, new Color(start.rgbString()).mix(target, diff/length));
+			    if(grid[x] && grid[x][y]) {
+				console.log("yo2");
+				setColor(x,y, new Color(start.rgbString()).mix(target, diff/length));
+			    } else {
+				console.log("nx=" + x, "ny=" + y);
+			    }
 			    eventQueue.push(updater);
 			} else {
 			    onComplete();
@@ -183,29 +148,29 @@ var generateGrid = function (world, width, height, dot) {
 	    // { longitude: , latitude: , color: String (z.B. "#ff0088"), weight: [0..1], length: [in millis]}
 	    newEvent: function(event) {
 		var x = longToX(event.longitude), y = latToX(event.latitude),
-		    dot, i, j, radius = 0, length, distance, delay, nx, ny,
-		    startRadius, targetRadius = dotRadius,
-		    startColor, targetColor = new Color(event.color);
+		    dot, i, j, radius = 8, length, distance, delay, nx, ny,
+		    targetRadius = dotRadius,
+		    targetColor = new Color(event.color),
+		    createChangers = function (x, y, startColor, startRadius, delay, length) {
+			setTimeout(function() {
+			    eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, length, function () {
+				eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, length, function () {}));
+			    })); 
+			    eventQueue.push(pub.events.changeRadius(x, y, startRadius, targetRadius, length, function () {
+				eventQueue.push(pub.events.changeRadius(x, y, targetRadius, startRadius, length, function () {}));
+			    }));
+			}, delay);
+		    };
 		for(i = -radius; i <= radius; i += 1) {
 		    for(j = -radius; j <= radius; j += 1) {
 			nx = x + i;
 			ny = y + j;
 			if(nx >= 0 && ny >= 0 && nx < width && ny < height) {
 			    dot = grid[nx][ny];
-			    startRadius = dot.initial.radius;
-			    startColor = dot.initial.color;
-			    distance = Math.abs(i) + Math.abs(j);
+			    distance = Math.sqrt(i*i + j*j);
 			    length = event.length/(distance + 1);
-			    delay = distance * 100;
-			    setTimeout(function() {
-				eventQueue.push(pub.events.changeColor(nx, ny, startColor, targetColor, length, function () {
-				    eventQueue.push(pub.events.changeColor(nx, ny, targetColor, startColor, length, function () {}));
-				})); 
-			    }, delay);
-				       /*
-			    eventQueue.push(pub.events.changeRadius(nx, ny, startRadius, targetRadius, length, delay, function () {
-				eventQueue.push(pub.events.changeRadius(nx, ny, targetRadius, startRadius, length, 0, function () {}));
-			    })); */
+			    delay = distance * length;
+			    createChangers(nx, ny, dot.initial.color, dot.initial.radius, delay, length);
 			}
 		    }
 		}
