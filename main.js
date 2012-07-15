@@ -1,5 +1,5 @@
 /*jslint white: true, browser: true */
-/*global Color: true */
+/*global Color: true, SunRiseSunSet: true */
 var generateGrid = function (world, width, height, dot) {
     "use strict";
     var grid = [],
@@ -33,26 +33,41 @@ var generateGrid = function (world, width, height, dot) {
 	}
     }
     return grid;
+  }, colors = {
+      lights: ["#fdf6e3", "#eee8d5", "#b8b0aa", "#93a1a1", "#839496"],
+      darks: ["#002b36", "#073642", "#586e75", "#657b83"],
+      land: {
+	  day: function () { return colors.lights.slice(1).concat(colors.darks.slice(1).reverse()); },
+	  night: function () { return colors.land.day().reverse(); }
+      }
   }, praiseplay = function (cwidth, cheight, ctx, world) {
     "use strict";
     var dotRadius = 3.2,
         dotDiameter = dotRadius*2,
 	width = cwidth/dotDiameter,
         height = cheight/dotDiameter,
-        colorForLandiness = function (landiness) {
-	    var darkness = landiness * landiness * landiness * 0.64;
-	    return new Color("#fff").darken(darkness);
+	longToX = function (longitude) {
+	    return Math.floor((longitude+180)*width/360 + 0.5); // <- round
+	}, latToX = function (latitude) {
+	    return Math.floor((-latitude+90)*height/180 + 0.5); // <- round
+	}, xToLong = function (x) {
+	    return Math.floor(x*360/width-180 + 0.5);
+	}, yToLat = function (y) {
+	    return -Math.floor(y*180/height-90 + 0.5);
 	},
-        overlayColor = function (x, y) {
-	    var rel = y/height,
-	        start = new Color("#3C90C9"),
-	        end = new Color("#275080");
-	    return start.mix(end, rel);
+        colorFor = function (longitude, latitude, landiness) {
+	    var darkness = landiness * landiness,
+	        now = new Date(),
+	        sunSet = new SunriseSunset(now.getYear(), now.getMonth() + 1, now.getDate(), latitude, longitude),
+	        landColors = colors.land.day(),
+	        idx = Math.floor(darkness*(landColors.length-2)),
+                landColor = sunSet.isDaylight(now.getHours()) ? new Color(landColors[idx]) : new Color(landColors[idx + 1]);
+	    return landColor;
 	}, dot = function (x, y, landiness) {
 	    return {
 		x: x, y: y, landiness: landiness,
 		initial: {
-		  color: colorForLandiness(landiness), radius: dotRadius * 0.64 
+		  color: colorFor(xToLong(x), yToLat(y), landiness), radius: dotRadius * 0.64 
 		},
 		target : {}, dirty: true
 	    };
@@ -94,10 +109,6 @@ var generateGrid = function (world, width, height, dot) {
 		target.color = color;
 	    }
 	    grid[x][y].dirty = true;
-	}, longToX = function (longitude) {
-	    return Math.floor((longitude+180)*width/360 + 0.5); // <- round
-	}, latToX = function (latitude) {
-	    return Math.floor((-latitude+90)*height/180 + 0.5); // <- round
 	}, eventQueue = [], pub = {
 	    reRender: function() {
 		var now = new Date(), event, length = eventQueue.length, i, x, y;

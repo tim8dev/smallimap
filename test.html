@@ -1,9 +1,10 @@
 <!doctype html>
 <html>
   <head></head>
-  <body style="background-color: #fafafa;">
+  <body style="background-color: #fdf6e3;">
     <canvas id="praiseplay" width="1152" height="608"></canvas>
     
+    <script src="suntimes.js"></script>
     <script src="renderframe.js"></script>
     <script src="color-0.4.1.js"></script>
     <script src="main.js"></script>
@@ -22,12 +23,12 @@
       setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
-          play.newEvent({longitude: x, latitude: y, color: "#336699", length: 512});
+          play.newEvent({longitude: x, latitude: y, color: "#d33682", length: 512});
         }, 512);
       setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
-          play.newEvent({longitude: x, latitude: y, color: "#996633", length: 1280});
+          play.newEvent({longitude: x, latitude: y, color: "#859900", length: 1280});
         }, 1280);/*
       setInterval(function() {
           var x = Math.random() * 360 - 180,
