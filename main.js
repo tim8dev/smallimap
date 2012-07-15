@@ -114,37 +114,43 @@ var generateGrid = function (world, width, height, dot) {
 		}
 	    },
 	    events: {
-		distributeActivity: function (x, y, length, radius, onComplete) {
+		distributeActivity: function (x, y, length, radius) {
 		    var startTime = new Date().getTime(),
 		        dot = grid[x][y],
 			startColor = new Color(dot.initial.color.rgbString()),
 		        targetColor = new Color("#ff8800"),
 		        startRadius = dot.initial.radius,
 		        targetRadius = dotRadius,
-		        lastRadius = -1,
+		        started = false,
+		        xs = [x-1, x, x+1],
+		        ys = [y-1, y, y+2],
 		        updater = function (now) {
-			    var diff = now.getTime() - startTime,
-			        activeRadius = Math.floor(diff/length * radius),
-				nx = x, ny = y, i, j;
+			    var diff = now.getTime() - startTime, i, j, nx, ny;
 			    if(diff < length) {
-				if(lastRadius < activeRadius) {
-				    lastRadius = activeRadius;
-				    for(i = -activeRadius; i <= activeRadius; i += activeRadius) {
-					for(j = -activeRadius; j <= activeRadius; j += activeRadius) {
-					    nx = x + i;
-					    ny = y + j;
-					    if(grid[nx] && grid[nx][ny])  {
-						eventQueue.push(pub.events.changeColor(nx, ny, startColor, targetColor, length - diff, function () {
-						    eventQueue.push(pub.events.changeColor(nx, ny, targetColor, startColor, length - diff, function () {}));
-						}));
-						eventQueue.push(pub.events.changeRadius(nx, ny, startRadius, targetRadius, length - diff, function () {
-						    eventQueue.push(pub.events.changeRadius(nx, ny, targetRadius, startRadius, length - diff, function () {}));
-						}));
-					    }
-					}
+				if(diff < length/(radius +1)) {
+				    if(!started) {
+					started = true;
+					eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, length, function () {
+					    eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, length, function () {}));
+					}));
+					eventQueue.push(pub.events.changeRadius(x, y, startRadius, targetRadius, length, function () {
+					    eventQueue.push(pub.events.changeRadius(x, y, targetRadius, startRadius, length, function () {}));
+					}));
 				    }
+				    eventQueue.push(updater);
+				} else {
+				   for(i = -1; i <= 1; i += 1) {
+				       for(j = -1; j <= 1; j += 1) {
+					   if(i === 0 || j === 0) {
+					       nx = x + i;
+					       ny = y + j;
+					       if(grid[nx] && grid[nx][ny]) {
+						   eventQueue.push(pub.events.distributeActivity(nx, ny, length - diff, radius - 1));
+					       }
+					   }
+				       }
+				   }
 				}
-				eventQueue.push(updater);
 			    }
 			};
 
@@ -176,11 +182,12 @@ var generateGrid = function (world, width, height, dot) {
 		    return updater;
 		}
 	    },
-	    newEvent: function(longitude, latitude, type) {
-		var x = longToX(longitude), y = latToX(latitude),
+	    // { longitude: , latitude: , color: String (z.B. "#ff0088"), weight: [0..1], length: [in millis]}
+	    newEvent: function(event) {
+		var x = longToX(event.longitude), y = latToX(event.latitude),
 		    dot, startColor, targetColor, startRadius, targetRadius;
 		if(x >= 0 && y >= 0 && x < width && y < height) {
-		    eventQueue.push(pub.events.distributeActivity(x, y, 1024, 3, function () {}));
+		    eventQueue.push(pub.events.distributeActivity(x, y, 2048, 1, function () {}));
 		}
 	    }
 	};
