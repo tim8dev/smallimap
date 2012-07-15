@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head></head>
+  <body style="background-color: #fafafa;">
+    <canvas id="praiseplay" width="1152" height="608"></canvas>
+    
+    <script src="color-0.4.1.js"></script>
+    <script src="main.js"></script>
+    <script src="world.js"></script>
+    <script>
+    /*  var world = [
+        [true, false, true, false],
+        [false, true, true, true],
+        [true, true, true, false],
+        [false, true, true, true],
+        [false, false, true, false]];*/
+      var canvas = document.getElementById("praiseplay");
+      var ctx = canvas.getContext("2d");
+      var play = praiseplay(canvas.width, canvas.height, ctx, world);
+    
+      play.reRender();
+      //play.newEvent(13.408056, 52.518611, "");
+      window.setInterval(play.reRender, 50);
+      window.setInterval(function() {
+          play.newEvent(151, -33, "");
+        }, 5000);
+      window.setInterval(function() {
+          var x = Math.random() * 360 - 180,
+              y = Math.random() * 180 - 90;
+          play.newEvent(x, y, "");
+        }, 50);
+    </script>
+  </body>
+</html>
