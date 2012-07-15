@@ -74,6 +74,9 @@ var generateGrid = function (world, width, height, dot) {
 	    dot.dirty = false;
 	    dot.target = {};
 	},
+        reset = function (x, y) {
+	    grid[x][y].dirty = true;
+	},
         setRadius = function (x, y, r) {
 	    var target = grid[x][y].target;
 	    if(target.radius) {
@@ -111,6 +114,42 @@ var generateGrid = function (world, width, height, dot) {
 		}
 	    },
 	    events: {
+		distributeActivity: function (x, y, length, radius, onComplete) {
+		    var startTime = new Date().getTime(),
+		        dot = grid[x][y],
+			startColor = new Color(dot.initial.color.rgbString()),
+		        targetColor = new Color("#ff8800"),
+		        startRadius = dot.initial.radius,
+		        targetRadius = dotRadius,
+		        lastRadius = -1,
+		        updater = function (now) {
+			    var diff = now.getTime() - startTime,
+			        activeRadius = Math.floor(diff/length * radius),
+				nx = x, ny = y, i, j;
+			    if(diff < length) {
+				if(lastRadius < activeRadius) {
+				    lastRadius = activeRadius;
+				    for(i = -activeRadius; i <= activeRadius; i += activeRadius) {
+					for(j = -activeRadius; j <= activeRadius; j += activeRadius) {
+					    nx = x + i;
+					    ny = y + j;
+					    if(grid[nx] && grid[nx][ny])  {
+						eventQueue.push(pub.events.changeColor(nx, ny, startColor, targetColor, length - diff, function () {
+						    eventQueue.push(pub.events.changeColor(nx, ny, targetColor, startColor, length - diff, function () {}));
+						}));
+						eventQueue.push(pub.events.changeRadius(nx, ny, startRadius, targetRadius, length - diff, function () {
+						    eventQueue.push(pub.events.changeRadius(nx, ny, targetRadius, startRadius, length - diff, function () {}));
+						}));
+					    }
+					}
+				    }
+				}
+				eventQueue.push(updater);
+			    }
+			};
+
+		    return updater;
+		},
 		changeColor: function (x, y, start, target, length, onComplete) {
 		    var startTime = new Date().getTime(),
 	            updater = function(now) {
@@ -141,18 +180,7 @@ var generateGrid = function (world, width, height, dot) {
 		var x = longToX(longitude), y = latToX(latitude),
 		    dot, startColor, targetColor, startRadius, targetRadius;
 		if(x >= 0 && y >= 0 && x < width && y < height) {
-		    dot = grid[x][y];
-		    startColor = new Color(dot.initial.color.rgbString());
-		    targetColor = new Color("#ff8800");
-		    startRadius = dot.initial.radius;
-		    targetRadius = dotRadius;
-		    
-		    eventQueue.push(pub.events.changeColor(x, y, startColor, targetColor, 1024, function () {
-			eventQueue.push(pub.events.changeColor(x, y, targetColor, startColor, 1024, function () {}));
-		    }));
-		    eventQueue.push(pub.events.changeRadius(x, y, startRadius, targetRadius, 1024, function () {
-			eventQueue.push(pub.events.changeRadius(x, y, targetRadius, startRadius, 1024, function () {}));
-		    }));
+		    eventQueue.push(pub.events.distributeActivity(x, y, 1024, 3, function () {}));
 		}
 	    }
 	};
