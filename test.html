@@ -17,7 +17,7 @@
       var play = praiseplay(canvas.width, canvas.height, ctx, world);
 
       //play.triggerOverlay();
-      
+ 
       var draw = function() {
 	  play.reRender();
 	  requestAnimationFrame(draw);
@@ -30,13 +30,17 @@
 
 	  play.newMouseHover(x,y);
       });
- 
-      setInterval(function() {
-          var x = Math.random() * 360 - 180,
-              y = Math.random() * 180 - 90;
-          play.newEvent({longitude: x, latitude: y, color: "#fff", length: 384});
-        }, 80);
-      setInterval(function() {
+
+      var newWhiteEvent = function () {
+	  setTimeout(function() {
+	      var x = Math.random() * 360 - 180,
+	      y = Math.random() * 180 - 90;
+	      play.newEvent({longitude: x, latitude: y, color: "#fff", length: 384});
+	      requestAnimationFrame(newWhiteEvent);
+	  }, 80);
+      };
+	  /*
+      setTimeout(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
           play.newEvent({longitude: x, latitude: y, color: "#d33682", length: 512});
@@ -46,11 +50,14 @@
               y = Math.random() * 180 - 90;
           play.newEvent({longitude: x, latitude: y, color: "#859900", length: 1280});
         }, 1280);
+      }*/
       setInterval(function() {
           var x = Math.random() * 360 - 180,
               y = Math.random() * 180 - 90;
-	  play.newEvent({longitude: x, latitude: y, color: "#693693", length: 4096, radius: 1});
-        }, 2048);
+	  play.newEvent({longitude: x, latitude: y, color: "#693693", length: 512, radius: 42});
+        }, 4096);
+
+      requestAnimationFrame(newWhiteEvent);
     </script>
   </body>
 </html>

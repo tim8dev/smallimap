@@ -37,8 +37,7 @@ var generateGrid = function (world, width, height, dot) {
       lights: ["#fdf6e3", "#eee8d5", "#b8b0aa", "#93a1a1", "#839496"],
       darks: ["#002b36", "#073642", "#586e75", "#657b83"],
       land: {
-	  day: function () { return colors.lights.slice(1).concat(colors.darks.slice(1).reverse()); },
-	  night: function () { return colors.land.day().reverse(); }
+	  day: function () { return colors.lights.slice(1).concat(colors.darks.slice(1).reverse()); }
       }
   }, praiseplay = function (cwidth, cheight, ctx, world) {
     "use strict";
