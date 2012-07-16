@@ -46,6 +46,7 @@ var generateGrid = function (world, width, height, dot) {
         dotDiameter = dotRadius*2,
 	width = cwidth/dotDiameter,
         height = cheight/dotDiameter,
+        lastX, lastY,
 	longToX = function (longitude) {
 	    return Math.floor((longitude+180)*width/360 + 0.5); // <- round
 	}, latToX = function (latitude) {
@@ -89,17 +90,24 @@ var generateGrid = function (world, width, height, dot) {
 	    dot.dirty = false;
 	    dot.target = {};
 	},
-        reset = function (x, y) {
+	dirtyXs,
+        markDirty = function (x, y) {
+	    if(dirtyXs) {
+		dirtyXs[x] = true;
+	    }
 	    grid[x][y].dirty = true;
+	},
+        reset = function (x, y) {
+	    markDirty(x, y);
 	},
         setRadius = function (x, y, r) {
 	    var target = grid[x][y].target;
 	    if(target.radius) {
-	        target.radius = target.radius/2 + r/2;
+	        target.radius = (target.radius + r)/2;
 	    } else {
 	        target.radius = r;
 	    }
-	    grid[x][y].dirty = true;
+	    markDirty(x, y);
 	},
         setColor = function (x, y, color) {
 	    var target = grid[x][y].target;
@@ -108,18 +116,28 @@ var generateGrid = function (world, width, height, dot) {
 	    } else {
 		target.color = color;
 	    }
-	    grid[x][y].dirty = true;
-	}, eventQueue = [], pub = {
+	    markDirty(x, y);
+	}, eventQueue = [],
+	  pub = {
 	    reRender: function() {
 		var now = new Date(), event, length = eventQueue.length, i, x, y;
 		for(i = 0; i < length; i += 1) {
 		    event = eventQueue.shift();
 		    event(now); 
 		}
+		if(!dirtyXs) {
+		  dirtyXs = [];
+		  for(x = 0; x < width; x += 1) {
+		    dirtyXs[x] = true;
+		  }
+		}
 		for(x = 0; x < width; x += 1) {
-		    for(y = 0; y < height; y += 1) {
-			if(grid[x][y].dirty) {
-			    render(x,y);
+		    if(dirtyXs[x]) {
+			dirtyXs[x] = false;
+			for(y = 0; y < height; y += 1) {
+			    if(grid[x][y].dirty) {
+				render(x,y);
+			    }
 			}
 		    }
 		}
@@ -142,14 +160,65 @@ var generateGrid = function (world, width, height, dot) {
 		    var startTime = new Date().getTime(),
 			updater = function(now) {
 			    var diff = now.getTime() - startTime;
-			    setRadius(x,y, (target-start)*diff/length + start);
 			    if(diff < length) {
+				setRadius(x,y, target*diff/length + start*(1-diff/length));
 				eventQueue.push(updater);
 			    } else {
+				setRadius(x,y, target);
 				onComplete();
 			    }
 			};
 		    return updater;
+		}
+	    },
+	    triggerOverlay: function () {
+		var y = 0,
+		    push = function (x, diff) {
+			var dot = grid[x][0], r = dot.initial.radius,
+			    setDots = function(r) {
+				for(y = 0; y < height; y += 1) {
+				    setRadius(x, y, r);
+				}
+			    };
+			eventQueue.push(function () {
+			    setDots(r + diff);
+			    setTimeout(function () {
+				setDots(r);
+				eventQueue.push(function () {
+				    push((x + 1) % width, diff);
+				});
+			    }, 1000/width*8); 
+			});
+		    };
+		
+		for(y = 0; y < height; y += 1) {
+		    push(0, +0.5);
+		}
+	    },
+	    newMouseHover: function (px, py) {
+		var x = Math.floor(px / dotDiameter),
+		    y = Math.floor(py / dotDiameter),
+		    radius = 2,
+		    pushDown = function (x, y, initial, target) {
+			//eventQueue.push(pub.events.changeRadius(x, y, initial, target, 128, function () {}));
+		    };
+
+		// Check we're not out of bounds
+		if(grid[x] && grid[x][y]) {
+		    if (lastX !== x || lastY !== y) {
+			dot = grid[x][y];
+			for(var i = -radius; i <= radius; i += 1) {
+			    for(var j = -radius; j <= radius; j += 1) {
+				var d = Math.sqrt(i*i+j*j);
+				if(d < radius) {
+				    pushDown(x + i, y + j,
+					     dot.initial.radius, 2);
+				}
+			    }
+			}
+			lastX = x;
+			lastY = y;
+		    }
 		}
 	    },
 	    // { longitude: , latitude: , color: String (z.B. "#ff0088"), weight: [0..1], length: [in millis], radius: Int}
@@ -167,7 +236,7 @@ var generateGrid = function (world, width, height, dot) {
 			    }));
 			}, delay);
 		    };
-		
+	
 		for(i = -radius; i <= radius; i += 1) {
 		    for(j = -radius; j <= radius; j += 1) {
 			nx = x + i;
